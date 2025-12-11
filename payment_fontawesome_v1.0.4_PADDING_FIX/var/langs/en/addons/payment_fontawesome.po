@@ -1,0 +1,29 @@
+msgid ""
+msgstr "Project-Id-Version: tygh\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language-Team: English\n"
+"Language: en_US\n"
+
+msgctxt "Addons::name::payment_fontawesome"
+msgid "DEVIN Payment FontAwesome"
+msgstr "DEVIN Payment FontAwesome"
+
+msgctxt "Addons::description::payment_fontawesome"
+msgid "Add FontAwesome icon support to payment methods. Display FA icons in checkout if configured, otherwise show payment image."
+msgstr "Add FontAwesome icon support to payment methods. Display FA icons in checkout if configured, otherwise show payment image."
+
+msgctxt "Languages::fontawesome_icon_class"
+msgid "FontAwesome Icon Class"
+msgstr "FontAwesome Icon Class"
+
+msgctxt "Languages::fontawesome_custom_style"
+msgid "Custom CSS Style"
+msgstr "Custom CSS Style"
+
+msgctxt "Languages::tt_payment_fontawesome_icon_class"
+msgid "Enter FontAwesome icon class with style prefix (e.g., fab fa-cc-visa, fas fa-credit-card, fab fa-paypal). Leave empty to use payment image instead."
+msgstr "Enter FontAwesome icon class with style prefix (e.g., fab fa-cc-visa, fas fa-credit-card, fab fa-paypal). Leave empty to use payment image instead."
+
+msgctxt "Languages::tt_payment_fontawesome_custom_style"
+msgid "Optional: Add custom CSS styling for the icon (e.g., color: #ff0000; font-size: 2.5em;). Leave empty for default styling."
+msgstr "Optional: Add custom CSS styling for the icon (e.g., color: #ff0000; font-size: 2.5em;). Leave empty for default styling."

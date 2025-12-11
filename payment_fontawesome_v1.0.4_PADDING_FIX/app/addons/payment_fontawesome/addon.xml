@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<addon scheme="4.0">
+    <id>payment_fontawesome</id>
+    <version>1.0.4</version>
+    <priority>100</priority>
+    <position>0</position>
+    <auto_install>N</auto_install>
+    <status>active</status>
+    <default_language>en</default_language>
+    <name>DEVIN Payment FontAwesome</name>
+    <description>Add FontAwesome icon support to payment methods. Display FA icons in checkout if configured, otherwise show payment image.</description>
+    <compatibility>
+        <core_version>
+            <min>4.0.1</min>
+            <max>4.19.0</max>
+        </core_version>
+    </compatibility>
+    <queries>
+        <item for="install">ALTER TABLE ?:payment_descriptions ADD fa_icon_class VARCHAR(255) DEFAULT ''</item>
+        <item for="install">ALTER TABLE ?:payment_descriptions ADD fa_icon_style VARCHAR(255) DEFAULT ''</item>
+        <item for="uninstall">ALTER TABLE ?:payment_descriptions DROP fa_icon_class</item>
+        <item for="uninstall">ALTER TABLE ?:payment_descriptions DROP fa_icon_style</item>
+    </queries>
+</addon>
