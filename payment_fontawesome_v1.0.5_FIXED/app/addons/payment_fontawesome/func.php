@@ -1,29 +1,27 @@
 <?php
-/**
- * Payment FontAwesome Add-on Functions
- * 
- * @package payment_fontawesome
- * @version 1.0.6
- */
+/***************************************************************************
+*   Payment FontAwesome Add-on for CS-Cart                                *
+*   Version: 1.0.7                                                        *
+*                                                                          *
+*   Adds FontAwesome icon support to payment methods.                     *
+****************************************************************************/
 
-defined('BOOTSTRAP') or die('Access denied');
+if ( !defined('AREA') ) { die('Access denied'); }
 
 /**
  * Installation function - adds database columns safely
- * Called during addon installation
+ * Called during addon installation via addon.xml functions
  */
 function fn_payment_fontawesome_install()
 {
-    $table = '?:payment_descriptions';
-    
     // Check and add fa_icon_class column
-    if (!fn_payment_fontawesome_column_exists($table, 'fa_icon_class')) {
-        db_query("ALTER TABLE $table ADD fa_icon_class VARCHAR(255) DEFAULT ''");
+    if (!fn_payment_fontawesome_column_exists('payment_descriptions', 'fa_icon_class')) {
+        db_query("ALTER TABLE ?:payment_descriptions ADD fa_icon_class VARCHAR(255) DEFAULT ''");
     }
     
-    // Check and add fa_icon_style column
-    if (!fn_payment_fontawesome_column_exists($table, 'fa_icon_style')) {
-        db_query("ALTER TABLE $table ADD fa_icon_style VARCHAR(255) DEFAULT ''");
+    // Check and add fa_icon_style column  
+    if (!fn_payment_fontawesome_column_exists('payment_descriptions', 'fa_icon_style')) {
+        db_query("ALTER TABLE ?:payment_descriptions ADD fa_icon_style VARCHAR(255) DEFAULT ''");
     }
     
     return true;
@@ -31,20 +29,17 @@ function fn_payment_fontawesome_install()
 
 /**
  * Uninstallation function - removes database columns
- * Called during addon uninstallation
+ * Called during addon uninstallation via addon.xml functions
  */
 function fn_payment_fontawesome_uninstall()
 {
-    $table = '?:payment_descriptions';
-    
-    // Remove fa_icon_class column if exists
-    if (fn_payment_fontawesome_column_exists($table, 'fa_icon_class')) {
-        db_query("ALTER TABLE $table DROP COLUMN fa_icon_class");
+    // Remove columns if they exist
+    if (fn_payment_fontawesome_column_exists('payment_descriptions', 'fa_icon_class')) {
+        db_query("ALTER TABLE ?:payment_descriptions DROP COLUMN fa_icon_class");
     }
     
-    // Remove fa_icon_style column if exists
-    if (fn_payment_fontawesome_column_exists($table, 'fa_icon_style')) {
-        db_query("ALTER TABLE $table DROP COLUMN fa_icon_style");
+    if (fn_payment_fontawesome_column_exists('payment_descriptions', 'fa_icon_style')) {
+        db_query("ALTER TABLE ?:payment_descriptions DROP COLUMN fa_icon_style");
     }
     
     return true;
@@ -53,19 +48,23 @@ function fn_payment_fontawesome_uninstall()
 /**
  * Helper function to check if a column exists in a table
  *
- * @param string $table Table name (with ?:prefix)
+ * @param string $table Table name WITHOUT prefix (e.g., 'payment_descriptions')
  * @param string $column Column name
  * @return bool True if column exists
  */
 function fn_payment_fontawesome_column_exists($table, $column)
 {
-    $table_name = str_replace('?:', '', $table);
+    // Get the full table name with prefix
+    $full_table = db_quote("?:$table");
+    // Remove backticks that db_quote might add
+    $full_table = str_replace('`', '', $full_table);
+    
     $result = db_get_field(
         "SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS 
          WHERE TABLE_SCHEMA = DATABASE() 
          AND TABLE_NAME = ?s 
          AND COLUMN_NAME = ?s",
-        fn_get_table_prefix() . $table_name,
+        $full_table,
         $column
     );
     
@@ -73,68 +72,59 @@ function fn_payment_fontawesome_column_exists($table, $column)
 }
 
 /**
- * Helper to get table prefix
- * @return string
- */
-if (!function_exists('fn_get_table_prefix')) {
-    function fn_get_table_prefix()
-    {
-        return defined('TABLE_PREFIX') ? TABLE_PREFIX : 'cscart_';
-    }
-}
-
-/**
- * Hook: get_payments
- * Modifies the SQL query to include fa_icon_class and fa_icon_style fields
- * from the payment_descriptions table.
- *
- * @param array  $params    Query parameters
- * @param string $fields    SQL fields list
- * @param string $join      SQL join clauses
- * @param string $order     SQL order clause
- * @param string $condition SQL where conditions
- * @param string $having    SQL having clause
- */
-function fn_payment_fontawesome_get_payments(&$params, &$fields, &$join, &$order, &$condition, &$having)
-{
-    // FIX: Prevent double hook - check if fields already added
-    if (strpos($fields, 'fa_icon_class') !== false) {
-        return; // Already added, skip to prevent duplicate column error
-    }
-    
-    // Only add fields if columns exist (safety check)
-    static $columns_exist = null;
-    
-    if ($columns_exist === null) {
-        $columns_exist = fn_payment_fontawesome_column_exists('?:payment_descriptions', 'fa_icon_class');
-    }
-    
-    if ($columns_exist) {
-        // Add the FontAwesome icon fields to the SELECT query
-        // The payment_descriptions table is already joined as 'pd' in the core query
-        $fields .= ', pd.fa_icon_class, pd.fa_icon_style';
-    }
-}
-
-/**
  * Hook: get_payments_post
- * Post-processes payment data to ensure fa_icon fields are properly set.
+ * 
+ * Called AFTER payments are fetched from database.
+ * We manually fetch fa_icon_class and fa_icon_style from payment_descriptions
+ * and add them to each payment in the result array.
  *
- * @param array $params   Query parameters
+ * @param array $params   Query parameters that were used
  * @param array $payments The retrieved payments array (by reference)
  */
-function fn_payment_fontawesome_get_payments_post(&$params, &$payments)
+function fn_payment_fontawesome_get_payments_post($params, &$payments)
 {
+    // Skip if no payments
     if (empty($payments)) {
         return;
     }
     
-    // Ensure fa_icon_class and fa_icon_style are set for each payment
+    // Skip if columns don't exist (addon not properly installed)
+    static $columns_exist = null;
+    if ($columns_exist === null) {
+        $columns_exist = fn_payment_fontawesome_column_exists('payment_descriptions', 'fa_icon_class');
+    }
+    
+    if (!$columns_exist) {
+        return;
+    }
+    
+    // Get all payment IDs
+    $payment_ids = array_keys($payments);
+    
+    if (empty($payment_ids)) {
+        return;
+    }
+    
+    // Determine language code
+    $lang_code = !empty($params['lang_code']) ? $params['lang_code'] : CART_LANGUAGE;
+    
+    // Fetch FontAwesome data for all payments in one query
+    $fa_data = db_get_hash_array(
+        "SELECT payment_id, fa_icon_class, fa_icon_style 
+         FROM ?:payment_descriptions 
+         WHERE payment_id IN (?n) AND lang_code = ?s",
+        'payment_id',
+        $payment_ids,
+        $lang_code
+    );
+    
+    // Add FA data to each payment
     foreach ($payments as $payment_id => &$payment) {
-        if (!isset($payment['fa_icon_class'])) {
+        if (isset($fa_data[$payment_id])) {
+            $payment['fa_icon_class'] = $fa_data[$payment_id]['fa_icon_class'];
+            $payment['fa_icon_style'] = $fa_data[$payment_id]['fa_icon_style'];
+        } else {
             $payment['fa_icon_class'] = '';
-        }
-        if (!isset($payment['fa_icon_style'])) {
             $payment['fa_icon_style'] = '';
         }
     }
@@ -143,7 +133,9 @@ function fn_payment_fontawesome_get_payments_post(&$params, &$payments)
 
 /**
  * Hook: update_payment_pre
- * Handles saving custom FontAwesome fields when a payment method is updated.
+ * 
+ * Called before payment data is saved to database.
+ * Sanitizes the FontAwesome fields to prevent XSS.
  *
  * @param array  $payment_data Payment data being saved
  * @param int    $payment_id   Payment ID (0 for new payments)
@@ -151,32 +143,29 @@ function fn_payment_fontawesome_get_payments_post(&$params, &$payments)
  */
 function fn_payment_fontawesome_update_payment_pre(&$payment_data, $payment_id, $lang_code)
 {
-    // Sanitize the icon class to prevent XSS
-    // Allow: alphanumeric, spaces, hyphens, underscores (valid FA class names including fa-kit)
+    // Sanitize icon class - allow alphanumeric, spaces, hyphens, underscores
+    // This covers: fab fa-cc-visa, fa-kit-duotone, fa-2xl, etc.
     if (isset($payment_data['fa_icon_class'])) {
         $payment_data['fa_icon_class'] = preg_replace('/[^a-zA-Z0-9\s\-_]/', '', $payment_data['fa_icon_class']);
         $payment_data['fa_icon_class'] = trim($payment_data['fa_icon_class']);
     }
     
-    // Sanitize custom style - strip dangerous CSS but ALLOW CSS custom properties (--fa-*)
-    // Your icons use: --fa-primary-color: #85bb65; --fa-secondary-color: etc.
+    // Sanitize custom style - remove dangerous CSS but allow normal properties
+    // Including CSS custom properties like --fa-primary-color: #fff;
     if (isset($payment_data['fa_icon_style'])) {
-        // Remove potentially dangerous CSS - but allow normal CSS including custom properties
-        $dangerous_patterns = [
-            '/expression\s*\(/i',      // IE expression()
-            '/javascript\s*:/i',       // javascript: URLs
-            '/vbscript\s*:/i',         // vbscript: URLs
-            '/url\s*\([^)]*data:/i',   // data: URLs in url()
-            '/@import/i',              // @import rules
-            '/behavior\s*:/i',         // IE behavior
-            '/binding\s*:/i',          // Mozilla binding
-            '/-moz-binding/i',         // Mozilla binding
-            '/<!--|-->/i',             // HTML comments
-            '/<\s*script/i',           // Script tags
-        ];
+        $dangerous_patterns = array(
+            '/expression\s*\(/i',
+            '/javascript\s*:/i',
+            '/vbscript\s*:/i',
+            '/url\s*\([^)]*data:/i',
+            '/@import/i',
+            '/behavior\s*:/i',
+            '/binding\s*:/i',
+            '/-moz-binding/i',
+            '/<!--|-->/i',
+            '/<\s*script/i',
+        );
         $payment_data['fa_icon_style'] = preg_replace($dangerous_patterns, '', $payment_data['fa_icon_style']);
-        
-        // Remove any HTML tags that might have slipped through
         $payment_data['fa_icon_style'] = strip_tags($payment_data['fa_icon_style']);
         $payment_data['fa_icon_style'] = trim($payment_data['fa_icon_style']);
     }
