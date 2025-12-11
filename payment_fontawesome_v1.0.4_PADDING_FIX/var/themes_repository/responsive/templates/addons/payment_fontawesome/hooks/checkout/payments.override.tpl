@@ -1,6 +1,9 @@
-{* 
- * Payment FontAwesome - Override template for checkout:payments hook
- * v1.0.4 FIXED - Removed recursive {hook} tags that caused infinite loop crash
+{*
+ * Payment FontAwesome Add-on
+ * Override template for checkout:payments hook
+ * 
+ * IMPORTANT: Override templates must NOT contain {hook} tags!
+ * The content here REPLACES what's inside the original hook.
  *}
 <div class="litecheckout__group">
     {if $cart.payment_id}
