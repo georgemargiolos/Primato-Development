@@ -1,5 +1,8 @@
+{* 
+ * Payment FontAwesome - Override template for checkout:payments hook
+ * v1.0.4 FIXED - Removed recursive {hook} tags that caused infinite loop crash
+ *}
 <div class="litecheckout__group">
-    {hook name="checkout:payments"}
     {if $cart.payment_id}
     {foreach $payment_methods as $payment}
         <div class="litecheckout__shipping-method litecheckout__field litecheckout__field--xsmall">
@@ -43,5 +46,4 @@
             </p>
         </div>
     {/if}
-    {/hook}
 </div>
