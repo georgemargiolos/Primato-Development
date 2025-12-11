@@ -3,7 +3,7 @@
  * Payment FontAwesome Add-on Initialization
  * 
  * @package payment_fontawesome
- * @version 1.0.5
+ * @version 1.0.6
  * 
  * This file registers all PHP hooks used by the addon.
  * The hook functions are defined in func.php.

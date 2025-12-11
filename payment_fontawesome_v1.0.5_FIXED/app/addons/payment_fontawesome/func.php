@@ -3,7 +3,7 @@
  * Payment FontAwesome Add-on Functions
  * 
  * @package payment_fontawesome
- * @version 1.0.5
+ * @version 1.0.6
  */
 
 defined('BOOTSTRAP') or die('Access denied');
@@ -97,6 +97,11 @@ if (!function_exists('fn_get_table_prefix')) {
  */
 function fn_payment_fontawesome_get_payments(&$params, &$fields, &$join, &$order, &$condition, &$having)
 {
+    // FIX: Prevent double hook - check if fields already added
+    if (strpos($fields, 'fa_icon_class') !== false) {
+        return; // Already added, skip to prevent duplicate column error
+    }
+    
     // Only add fields if columns exist (safety check)
     static $columns_exist = null;
     
@@ -147,25 +152,32 @@ function fn_payment_fontawesome_get_payments_post(&$params, &$payments)
 function fn_payment_fontawesome_update_payment_pre(&$payment_data, $payment_id, $lang_code)
 {
     // Sanitize the icon class to prevent XSS
+    // Allow: alphanumeric, spaces, hyphens, underscores (valid FA class names including fa-kit)
     if (isset($payment_data['fa_icon_class'])) {
-        // Only allow alphanumeric, spaces, and hyphens (valid FA class names)
-        $payment_data['fa_icon_class'] = preg_replace('/[^a-zA-Z0-9\s\-]/', '', $payment_data['fa_icon_class']);
+        $payment_data['fa_icon_class'] = preg_replace('/[^a-zA-Z0-9\s\-_]/', '', $payment_data['fa_icon_class']);
         $payment_data['fa_icon_class'] = trim($payment_data['fa_icon_class']);
     }
     
-    // Sanitize custom style - strip dangerous CSS
+    // Sanitize custom style - strip dangerous CSS but ALLOW CSS custom properties (--fa-*)
+    // Your icons use: --fa-primary-color: #85bb65; --fa-secondary-color: etc.
     if (isset($payment_data['fa_icon_style'])) {
-        // Remove potentially dangerous CSS properties and values
+        // Remove potentially dangerous CSS - but allow normal CSS including custom properties
         $dangerous_patterns = [
-            '/expression\s*\(/i',
-            '/javascript\s*:/i',
-            '/vbscript\s*:/i',
-            '/url\s*\(/i',
-            '/@import/i',
-            '/behavior\s*:/i',
-            '/binding\s*:/i',
+            '/expression\s*\(/i',      // IE expression()
+            '/javascript\s*:/i',       // javascript: URLs
+            '/vbscript\s*:/i',         // vbscript: URLs
+            '/url\s*\([^)]*data:/i',   // data: URLs in url()
+            '/@import/i',              // @import rules
+            '/behavior\s*:/i',         // IE behavior
+            '/binding\s*:/i',          // Mozilla binding
+            '/-moz-binding/i',         // Mozilla binding
+            '/<!--|-->/i',             // HTML comments
+            '/<\s*script/i',           // Script tags
         ];
         $payment_data['fa_icon_style'] = preg_replace($dangerous_patterns, '', $payment_data['fa_icon_style']);
+        
+        // Remove any HTML tags that might have slipped through
+        $payment_data['fa_icon_style'] = strip_tags($payment_data['fa_icon_style']);
         $payment_data['fa_icon_style'] = trim($payment_data['fa_icon_style']);
     }
 }

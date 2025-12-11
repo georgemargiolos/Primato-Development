@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <addon scheme="4.0">
     <id>payment_fontawesome</id>
-    <version>1.0.5</version>
+    <version>1.0.6</version>
     <priority>100</priority>
     <position>0</position>
     <auto_install>N</auto_install>
