@@ -1,0 +1,66 @@
+/**
+ * Payment FontAwesome Add-on Styles
+ * Version: 1.0.5 FIXED
+ */
+
+/* Fix truncated payment description text */
+.litecheckout__shipping-method__delivery-time {
+    overflow: visible !important;
+    text-overflow: clip !important;
+    white-space: normal !important;
+    word-wrap: break-word !important;
+    max-height: none !important;
+    line-height: 1.5 !important;
+}
+
+/* Add padding and spacing to make payment boxes bigger and more readable */
+.litecheckout__shipping-method {
+    margin-bottom: 15px !important;
+    padding: 15px !important;
+}
+
+.litecheckout__shipping-method__wrapper {
+    display: block !important;
+    min-height: auto !important;
+}
+
+/* Add spacing to logo/icon */
+.litecheckout__shipping-method__logo {
+    margin-bottom: 10px !important;
+}
+
+.litecheckout__shipping-method__title {
+    margin-bottom: 8px !important;
+}
+
+.litecheckout__shipping-method__delivery-time {
+    padding-top: 5px !important;
+}
+
+/* FontAwesome icon specific styles */
+.litecheckout__shipping-method__logo-icon {
+    display: inline-block;
+    min-width: 40px;
+    text-align: center;
+    vertical-align: middle;
+    transition: transform 0.2s ease, color 0.2s ease;
+}
+
+/* Hover effect for payment icons */
+.litecheckout__shipping-method:hover .litecheckout__shipping-method__logo-icon {
+    transform: scale(1.1);
+}
+
+/* Selected payment method icon emphasis */
+.litecheckout__shipping-method--active .litecheckout__shipping-method__logo-icon,
+.litecheckout__shipping-method.active .litecheckout__shipping-method__logo-icon {
+    opacity: 1;
+}
+
+/* Fallback styling if FontAwesome fails to load */
+.litecheckout__shipping-method__logo-icon:empty::before,
+.litecheckout__shipping-method__logo-icon.fa-missing::before {
+    content: "💳";
+    font-size: 2em;
+}
+
