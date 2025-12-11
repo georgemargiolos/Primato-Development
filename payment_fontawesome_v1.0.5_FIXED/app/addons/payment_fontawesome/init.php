@@ -1,14 +1,14 @@
 <?php
 /***************************************************************************
 *   Payment FontAwesome Add-on for CS-Cart                                *
-*   Version: 1.0.7                                                        *
+*   Version: 1.0.8                                                        *
 *                                                                          *
 *   Adds FontAwesome icon support to payment methods.                     *
+*   NO runtime hooks needed - CS-Cart auto-fetches custom columns from    *
+*   payment_descriptions table.                                           *
 ****************************************************************************/
 
 if ( !defined('AREA') ) { die('Access denied'); }
 
-fn_register_hooks(
-    'get_payments_post',  // Fetch FA data AFTER payments are retrieved
-    'update_payment_pre'  // Sanitize FA fields before saving
-);
+// NO hooks registered - CS-Cart already fetches fa_icon_class and fa_icon_style
+// automatically from payment_descriptions table
